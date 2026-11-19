@@ -1,0 +1,1267 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Редактор фигур</title>
+<style>
+:root{
+  --bg:#0d0d14; --bg2:#181826; --bg3:#0f0f16; --border:#2a2a3d;
+  --text:#e8e8f0; --muted:#6b6b80; --accent:#7b6cf6;
+  --green:#6bcf7f; --red:#ff6b6b; --yellow:#ffd93d;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  background:var(--bg);color:var(--text);
+  height:100vh;display:flex;overflow:hidden;
+}
+#canvas-wrap{
+  flex:1;display:flex;align-items:center;justify-content:center;
+  background:#05050a;padding:20px;min-width:0;
+}
+canvas{
+  background:#000;border-radius:10px;
+  box-shadow:0 20px 50px rgba(0,0,0,.5);
+  cursor:crosshair;touch-action:none;
+  max-width:100%;max-height:100%;
+}
+#sidebar{
+  width:430px;background:var(--bg2);border-left:1px solid var(--border);
+  padding:18px;overflow-y:auto;display:flex;flex-direction:column;gap:14px;
+  flex-shrink:0;
+}
+h2{
+  font-size:11px;font-weight:700;text-transform:uppercase;
+  letter-spacing:.08em;color:var(--accent);margin-top:6px;
+}
+.field{display:flex;flex-direction:column;gap:5px;}
+.field label{font-size:12px;color:var(--muted);}
+input[type=text]{
+  background:var(--bg3);border:1px solid var(--border);color:var(--text);
+  padding:7px 10px;border-radius:6px;font-family:inherit;font-size:13px;
+  width:100%;outline:none;
+}
+input[type=text]:focus{border-color:var(--accent);}
+.checkbox-line{
+  display:flex;align-items:center;gap:8px;font-size:13px;
+  cursor:pointer;user-select:none;
+}
+.checkbox-line input{cursor:pointer;}
+.modes{display:flex;gap:6px;}
+.modes button{
+  flex:1;padding:8px 4px;background:var(--bg3);border:1px solid var(--border);
+  color:var(--text);border-radius:6px;cursor:pointer;font-family:inherit;
+  font-size:12px;font-weight:600;transition:background .15s,border-color .15s;
+}
+.modes button:hover{background:#222232;}
+.modes button.active{background:var(--accent);border-color:var(--accent);color:#fff;}
+
+/* --- Zoom controls --- */
+.zoom-row{display:flex;gap:6px;align-items:center;}
+.zoom-row button{
+  flex:1;padding:8px 4px;background:var(--bg3);
+  border:1px solid var(--border);color:var(--text);
+  border-radius:6px;cursor:pointer;font-family:inherit;
+  font-size:14px;font-weight:700;transition:background .15s,border-color .15s;
+}
+.zoom-row button:hover{background:#222232;border-color:#3a3a52;}
+.zoom-value{
+  font-family:'SF Mono',Menlo,Consolas,monospace;
+  font-size:12px;font-weight:700;color:var(--accent);
+  min-width:56px;text-align:center;
+  padding:7px 0;background:var(--bg3);
+  border:1px solid var(--border);border-radius:6px;
+}
+
+.anchors{
+  display:flex;flex-direction:column;gap:5px;
+  max-height:320px;overflow-y:auto;padding-right:4px;
+}
+.anchors::-webkit-scrollbar{width:6px;}
+.anchors::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+.anchor-row{
+  display:grid;
+  grid-template-columns:26px 1fr 1fr 46px 30px 28px;
+  gap:4px;align-items:center;font-size:11px;padding:5px 6px;
+  background:var(--bg3);border:1px solid var(--border);
+  border-radius:6px;font-family:'SF Mono',Menlo,Consolas,monospace;
+  transition:box-shadow .1s, border-color .1s;
+}
+.anchor-row.is-cp{border-color:var(--accent);background:rgba(123,108,246,.10);}
+.anchor-row.is-start{border-color:var(--green);box-shadow:0 0 8px rgba(107,207,127,.25);}
+.anchor-row.is-selected{
+  border-color:var(--yellow);
+  box-shadow:0 0 0 2px rgba(255,217,61,.6), 0 0 12px rgba(255,217,61,.35);
+}
+.anchor-row .idx{
+  color:var(--muted);text-align:center;font-weight:700;font-size:12px;
+}
+.anchor-row.is-selected .idx{color:var(--yellow);}
+.anchor-row input[type=number]{
+  padding:4px 5px;font-size:12px;text-align:center;
+  background:#05050a;border:1px solid var(--border);
+  color:var(--text);border-radius:4px;outline:none;width:100%;
+  font-family:inherit;font-weight:600;
+  -moz-appearance:textfield;appearance:textfield;
+}
+.anchor-row input[type=number]::-webkit-outer-spin-button,
+.anchor-row input[type=number]::-webkit-inner-spin-button{
+  -webkit-appearance:none;margin:0;
+}
+.anchor-row input[type=number]:hover{border-color:#3a3a52;}
+.anchor-row input[type=number]:focus{
+  border-color:var(--accent);background:#0a0a14;
+  box-shadow:0 0 0 2px rgba(123,108,246,.25);
+}
+.cp-toggle{
+  display:flex;align-items:center;justify-content:center;gap:3px;
+  cursor:pointer;font-size:10px;font-weight:700;color:var(--muted);
+  user-select:none;
+}
+.cp-toggle input{cursor:pointer;width:13px;height:13px;margin:0;}
+.anchor-row.is-cp .cp-toggle{color:var(--accent);}
+.seg-btn{
+  width:30px;height:24px;background:transparent;border:1px solid var(--border);
+  color:var(--muted);border-radius:4px;cursor:pointer;font-family:inherit;
+  font-size:11px;font-weight:700;transition:background .15s;
+}
+.seg-btn:hover{background:#222232;}
+.seg-btn.curve{background:var(--accent);border-color:var(--accent);color:#fff;}
+.del-btn{
+  width:26px;height:24px;background:transparent;border:1px solid var(--border);
+  color:var(--red);border-radius:4px;cursor:pointer;font-family:inherit;
+  font-size:13px;font-weight:700;line-height:1;
+}
+.del-btn:hover{background:rgba(255,107,107,.15);border-color:var(--red);}
+.row-btns{display:flex;gap:8px;}
+.row-btns button{
+  flex:1;padding:9px 8px;border-radius:6px;border:1px solid var(--border);
+  background:var(--bg3);color:var(--text);font-family:inherit;
+  font-size:12px;font-weight:600;cursor:pointer;
+  transition:background .15s,border-color .15s;
+}
+.row-btns button:hover{background:#222232;border-color:#3a3a52;}
+.row-btns button.primary{background:var(--accent);border-color:var(--accent);color:#fff;}
+.row-btns button.primary:hover{background:#8a7cff;}
+.row-btns button.danger{color:var(--red);}
+.row-btns button.danger:hover{background:rgba(255,107,107,.12);border-color:var(--red);}
+#output{
+  font-family:'SF Mono',Menlo,Consolas,monospace;
+  font-size:11px;line-height:1.55;background:#05050a;
+  border:1px solid var(--border);border-radius:6px;padding:12px 14px;
+  white-space:pre-wrap;word-break:break-word;
+  overflow-y:auto;overflow-x:hidden;
+  min-height:180px;max-height:45vh;color:var(--green);
+  user-select:text;-webkit-user-select:text;
+  resize:vertical;
+}
+#output:empty::before{content:'Нажмите «Показать код»';color:var(--muted);font-style:italic;}
+.hint{
+  font-size:11px;color:var(--muted);line-height:1.6;padding:10px;
+  background:rgba(123,108,246,.05);border-radius:6px;
+  border-left:3px solid var(--accent);
+}
+.hint b{color:var(--text);}
+.hint kbd{
+  display:inline-block;padding:1px 6px;font-family:monospace;
+  font-size:11px;background:var(--bg3);border:1px solid var(--border);
+  border-radius:3px;color:var(--text);font-weight:700;
+}
+.ref-box{
+  display:flex;flex-direction:column;gap:8px;
+  padding:10px;background:var(--bg3);border:1px solid var(--border);
+  border-radius:8px;
+}
+.ref-status{
+  font-size:11px;color:var(--muted);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.ref-status.has-img{color:var(--green);}
+.ref-controls{display:flex;gap:8px;align-items:center;}
+.ref-controls > span:first-child{
+  font-size:11px;color:var(--muted);min-width:70px;
+}
+.ref-controls input[type=range]{
+  flex:1;-webkit-appearance:none;appearance:none;
+  height:6px;border-radius:3px;background:#222230;outline:none;
+}
+.ref-controls input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;appearance:none;
+  width:14px;height:14px;border-radius:50%;
+  background:#fff;border:2px solid var(--accent);cursor:pointer;
+}
+.ref-controls input[type=range]::-moz-range-thumb{
+  width:14px;height:14px;border-radius:50%;
+  background:#fff;border:2px solid var(--accent);cursor:pointer;
+}
+.ref-controls .opacity-val{
+  font-size:11px;color:var(--accent);font-weight:700;
+  min-width:42px;text-align:right;font-family:monospace;
+}
+.ref-small-btn{
+  padding:5px 8px;font-size:11px;font-weight:600;
+  background:transparent;border:1px solid var(--border);
+  color:var(--text);border-radius:5px;cursor:pointer;
+  font-family:inherit;
+}
+.ref-small-btn:hover{background:#222232;border-color:#3a3a52;}
+.ref-small-btn.danger{color:var(--red);}
+.ref-small-btn.danger:hover{background:rgba(255,107,107,.12);border-color:var(--red);}
+.ref-small-btn:disabled{opacity:.45;cursor:not-allowed;}
+@media (max-width:900px){
+  body{flex-direction:column;}
+  #canvas-wrap{height:55vh;flex:none;}
+  #sidebar{width:100%;flex:1;}
+}
+</style>
+</head>
+<body>
+
+<div id="canvas-wrap">
+  <canvas id="c" width="600" height="600"></canvas>
+</div>
+
+<div id="sidebar">
+  <h2>Вид</h2>
+  <div class="zoom-row">
+    <button id="zoom-out-btn" title="Уменьшить (−)">−</button>
+    <span class="zoom-value" id="zoom-value">100%</span>
+    <button id="zoom-in-btn" title="Увеличить (+)">＋</button>
+    <button id="zoom-reset-btn" title="Сброс (0)" style="flex:0 0 44px;">⟲</button>
+  </div>
+
+  <h2>Референс-картинка</h2>
+  <div class="ref-box">
+    <span class="ref-status" id="ref-status">Картинка не загружена</span>
+    <div class="ref-controls">
+      <span>Прозрачность</span>
+      <input type="range" id="ref-opacity" min="0" max="100" value="60">
+      <span class="opacity-val" id="ref-opacity-val">60%</span>
+    </div>
+    <div class="ref-controls">
+      <span>Масштаб</span>
+      <input type="range" id="ref-scale" min="25" max="400" value="100">
+      <span class="opacity-val" id="ref-scale-val">100%</span>
+    </div>
+    <div class="ref-controls">
+      <button class="ref-small-btn" id="ref-load-btn">Загрузить</button>
+      <button class="ref-small-btn" id="ref-toggle-btn" disabled>Скрыть</button>
+      <button class="ref-small-btn" id="ref-reset-scale-btn">Сброс 100%</button>
+      <button class="ref-small-btn danger" id="ref-remove-btn" disabled>Удалить</button>
+    </div>
+    <label class="checkbox-line">
+      <input type="checkbox" id="ref-fit-input" checked>
+      Вписывать в квадрат (не растягивать)
+    </label>
+  </div>
+
+  <h2>Фигура</h2>
+  <div class="field">
+    <label>Название</label>
+    <input type="text" id="name-input" value="Новая фигура">
+  </div>
+  <label class="checkbox-line">
+    <input type="checkbox" id="closed-input"> Замкнутая фигура
+  </label>
+  <label class="checkbox-line">
+    <input type="checkbox" id="snap-input" checked> Прилипание к сетке (шаг 5)
+  </label>
+
+  <h2>Режим мыши</h2>
+  <div class="modes">
+    <button data-mode="add" class="active">＋ Точка</button>
+    <button data-mode="move">✥ Двигать</button>
+    <button data-mode="cp">● CP</button>
+  </div>
+
+  <h2>Точки (<span id="anchor-count">0</span>)</h2>
+  <div class="anchors" id="anchor-list"></div>
+
+  <div class="row-btns">
+    <button id="save-json-btn">Скачать JSON</button>
+    <button id="load-btn">Загрузить</button>
+    <button id="clear-btn" class="danger">Очистить</button>
+  </div>
+  <div class="row-btns">
+    <button id="show-btn" class="primary">Показать код</button>
+    <button id="save-js-btn">Скачать .js</button>
+  </div>
+
+  <h2>Готовый код для вставки</h2>
+  <div id="output"></div>
+
+  <div class="hint">
+    <b>Как рисовать:</b><br>
+    • Клик по пустому месту — добавить точку.<br>
+    • Клик по точке и тянуть — переместить.<br>
+    • Клик по точке — выделить её.<br>
+    • Правый клик по точке — удалить.<br>
+    • Галочка <b>CP</b> — пометить точку сохранения.<br>
+    • Кнопка <b>L</b>/<b>K</b> — тип сегмента после этой точки.<br>
+    <br>
+    <b>Клавиши</b> (для выделенной точки):<br>
+    • <kbd>L</kbd> или <kbd>Д</kbd> — сегмент линией<br>
+    • <kbd>K</kbd> или <kbd>Л</kbd> — сегмент кривой<br>
+    • <kbd>Delete</kbd> — удалить точку<br>
+    <br>
+    <b>Холст:</b><br>
+    • Колесо мыши — зум<br>
+    • Средняя кнопка мыши — панорама<br>
+    • <kbd>+</kbd> / <kbd>−</kbd> / <kbd>0</kbd> — зум, сброс
+  </div>
+</div>
+
+<input type="file" id="file-input" accept=".json,application/json" style="display:none">
+<input type="file" id="img-input" accept="image/*" style="display:none">
+
+<script>
+(function() {
+  'use strict';
+
+  const canvas = document.getElementById('c');
+  const ctx = canvas.getContext('2d');
+  const SIZE = 600;
+  const DESIGN = 300;
+  const SCALE = SIZE / DESIGN;
+  const SNAP = 5;
+  const ZOOM_MIN = 0.25;
+  const ZOOM_MAX = 8;
+
+  const state = {
+    name: 'Новая фигура',
+    closed: false,
+    anchors: [],
+    segs: [],
+    mode: 'add',
+    selected: -1,
+    zoom: 1,
+    panX: 0,
+    panY: 0,
+    refImage: null,
+    refVisible: true,
+    refOpacity: 0.6,
+    refFit: true,
+    refScale: 1,
+    refName: '',
+  };
+
+  let snapEnabled = true;
+  let dragTarget = null;
+  let panStart = null;
+
+  function snap(v) { return snapEnabled ? Math.round(v / SNAP) * SNAP : v; }
+  function dist(ax, ay, bx, by) { return Math.hypot(ax - bx, ay - by); }
+
+  /* ============ Зум / панорама ============ */
+
+  function updateZoomUI() {
+    const el = document.getElementById('zoom-value');
+    if (el) el.textContent = Math.round(state.zoom * 100) + '%';
+  }
+
+  function setZoomAtPoint(newZoom, cx, cy) {
+    newZoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, newZoom));
+    if (newZoom === state.zoom) return;
+    const canvasX = (cx - state.panX) / state.zoom;
+    const canvasY = (cy - state.panY) / state.zoom;
+    state.zoom = newZoom;
+    state.panX = cx - canvasX * newZoom;
+    state.panY = cy - canvasY * newZoom;
+    updateZoomUI();
+    draw();
+  }
+
+  function zoomIn()    { setZoomAtPoint(state.zoom * 1.25, SIZE / 2, SIZE / 2); }
+  function zoomOut()   { setZoomAtPoint(state.zoom / 1.25, SIZE / 2, SIZE / 2); }
+  function zoomReset() {
+    state.zoom = 1; state.panX = 0; state.panY = 0;
+    updateZoomUI();
+    draw();
+  }
+
+  function getVisibleDesignRange() {
+    const x0 = ((0 - state.panX) / state.zoom) / SCALE;
+    const y0 = ((0 - state.panY) / state.zoom) / SCALE;
+    const x1 = ((SIZE - state.panX) / state.zoom) / SCALE;
+    const y1 = ((SIZE - state.panY) / state.zoom) / SCALE;
+    return { x0, y0, x1, y1 };
+  }
+
+  /* ============ Сэмплирование ============ */
+
+  function sampleSeg(a, b, seg) {
+    const out = [];
+    if (!seg || seg.type !== 'curve') {
+      out.push({ x: +b.x.toFixed(1), y: +b.y.toFixed(1) });
+      return out;
+    }
+    const { c1x, c1y, c2x, c2y } = seg;
+
+    const approxLen =
+      Math.hypot(c1x - a.x, c1y - a.y) +
+      Math.hypot(c2x - c1x, c2y - c1y) +
+      Math.hypot(b.x - c2x, b.y - c2y);
+    const N = Math.max(16, Math.min(96, Math.round(approxLen / 2.5)));
+
+    for (let j = 1; j <= N; j++) {
+      const t = j / N, mt = 1 - t;
+      const x = mt*mt*mt*a.x + 3*mt*mt*t*c1x + 3*mt*t*t*c2x + t*t*t*b.x;
+      const y = mt*mt*mt*a.y + 3*mt*mt*t*c1y + 3*mt*t*t*c2y + t*t*t*b.y;
+      out.push({ x: +x.toFixed(2), y: +y.toFixed(2) });
+    }
+    return out;
+  }
+
+  function buildSampled() {
+    const { anchors, segs, closed } = state;
+    if (anchors.length === 0) return { points: [], checkpoints: [] };
+
+    const points = [{ x: +anchors[0].x.toFixed(1), y: +anchors[0].y.toFixed(1) }];
+    const anchorMap = [0];
+
+    const numSegs = closed ? anchors.length : anchors.length - 1;
+    for (let i = 0; i < numSegs; i++) {
+      const a = anchors[i];
+      const b = anchors[(i + 1) % anchors.length];
+      const sub = sampleSeg(a, b, segs[i]);
+      const nextIdx = (i + 1) % anchors.length;
+      anchorMap[nextIdx] = points.length + sub.length - 1;
+      for (const p of sub) points.push(p);
+    }
+
+    if (closed && points.length > 1) {
+      const last = points[points.length - 1];
+      const first = points[0];
+      if (Math.abs(last.x - first.x) < 0.05 && Math.abs(last.y - first.y) < 0.05) {
+        points.pop();
+        anchorMap[0] = 0;
+      }
+    }
+
+    const checkpoints = [];
+    for (let i = 0; i < anchors.length; i++) {
+      if (!anchors[i].cp) continue;
+      const idx = anchorMap[i];
+      if (idx === undefined || idx >= points.length) continue;
+      checkpoints.push(idx);
+    }
+
+    return { points, checkpoints };
+  }
+
+  /* ============ Отрисовка ============ */
+
+  function drawReference() {
+    if (!state.refImage || !state.refVisible) return;
+    const img = state.refImage;
+    const alpha = state.refOpacity;
+    if (alpha <= 0.001) return;
+
+    let baseW, baseH;
+    if (state.refFit) {
+      const ratio = Math.min(SIZE / img.width, SIZE / img.height);
+      baseW = img.width * ratio;
+      baseH = img.height * ratio;
+    } else {
+      baseW = SIZE;
+      baseH = SIZE;
+    }
+
+    const w = baseW * state.refScale;
+    const h = baseH * state.refScale;
+    const x = (SIZE - w) / 2;
+    const y = (SIZE - h) / 2;
+
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.beginPath();
+    ctx.rect(0, 0, SIZE, SIZE);
+    ctx.clip();
+    ctx.drawImage(img, x, y, w, h);
+    ctx.restore();
+  }
+
+  function drawGrid() {
+    const vis = getVisibleDesignRange();
+
+    // Мелкая сетка (шаг 25)
+    ctx.strokeStyle = 'rgba(80,80,140,0.35)';
+    ctx.lineWidth = 1 / state.zoom;
+
+    const gx0 = Math.floor(vis.x0 / 25) * 25 - 25;
+    const gx1 = Math.ceil(vis.x1 / 25) * 25 + 25;
+    const gy0 = Math.floor(vis.y0 / 25) * 25 - 25;
+    const gy1 = Math.ceil(vis.y1 / 25) * 25 + 25;
+
+    for (let i = gx0; i <= gx1; i += 25) {
+      const s = i * SCALE;
+      ctx.beginPath();
+      ctx.moveTo(s, vis.y0 * SCALE);
+      ctx.lineTo(s, vis.y1 * SCALE);
+      ctx.stroke();
+    }
+    for (let i = gy0; i <= gy1; i += 25) {
+      const s = i * SCALE;
+      ctx.beginPath();
+      ctx.moveTo(vis.x0 * SCALE, s);
+      ctx.lineTo(vis.x1 * SCALE, s);
+      ctx.stroke();
+    }
+
+    // Крупная сетка (шаг 100)
+    ctx.strokeStyle = 'rgba(120,120,200,0.55)';
+    ctx.lineWidth = 1 / state.zoom;
+
+    const GX0 = Math.floor(vis.x0 / 100) * 100 - 100;
+    const GX1 = Math.ceil(vis.x1 / 100) * 100 + 100;
+    const GY0 = Math.floor(vis.y0 / 100) * 100 - 100;
+    const GY1 = Math.ceil(vis.y1 / 100) * 100 + 100;
+
+    for (let i = GX0; i <= GX1; i += 100) {
+      const s = i * SCALE;
+      ctx.beginPath();
+      ctx.moveTo(s, vis.y0 * SCALE);
+      ctx.lineTo(s, vis.y1 * SCALE);
+      ctx.stroke();
+    }
+    for (let i = GY0; i <= GY1; i += 100) {
+      const s = i * SCALE;
+      ctx.beginPath();
+      ctx.moveTo(vis.x0 * SCALE, s);
+      ctx.lineTo(vis.x1 * SCALE, s);
+      ctx.stroke();
+    }
+  }
+
+  function drawFigure() {
+    const { points } = buildSampled();
+    const ui = 1 / state.zoom;
+
+    // Путь
+    ctx.strokeStyle = '#5a5a75';
+    ctx.lineWidth = 10;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.beginPath();
+    if (points.length > 0) {
+      ctx.moveTo(points[0].x * SCALE, points[0].y * SCALE);
+      for (let i = 1; i < points.length; i++) {
+        ctx.lineTo(points[i].x * SCALE, points[i].y * SCALE);
+      }
+      if (state.closed) ctx.closePath();
+    }
+    ctx.stroke();
+
+    // Ручки кривых
+    for (let i = 0; i < state.segs.length; i++) {
+      const seg = state.segs[i];
+      if (!seg || seg.type !== 'curve') continue;
+      const a = state.anchors[i];
+      const b = state.anchors[(i + 1) % state.anchors.length];
+      if (!a || !b) continue;
+
+      ctx.strokeStyle = 'rgba(123,108,246,.5)';
+      ctx.lineWidth = 1.5 * ui;
+      ctx.setLineDash([4 * ui, 4 * ui]);
+      ctx.beginPath();
+      ctx.moveTo(a.x * SCALE, a.y * SCALE);
+      ctx.lineTo(seg.c1x * SCALE, seg.c1y * SCALE);
+      ctx.moveTo(b.x * SCALE, b.y * SCALE);
+      ctx.lineTo(seg.c2x * SCALE, seg.c2y * SCALE);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      [[seg.c1x, seg.c1y], [seg.c2x, seg.c2y]].forEach(([x, y]) => {
+        ctx.beginPath();
+        ctx.arc(x * SCALE, y * SCALE, 5.5 * ui, 0, Math.PI * 2);
+        ctx.fillStyle = '#7b6cf6';
+        ctx.fill();
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 1.5 * ui;
+        ctx.stroke();
+      });
+    }
+
+    // Точки
+    let firstCpAnchor = -1;
+    for (let i = 0; i < state.anchors.length; i++) {
+      if (state.anchors[i].cp) { firstCpAnchor = i; break; }
+    }
+
+    for (let i = 0; i < state.anchors.length; i++) {
+      const a = state.anchors[i];
+      const x = a.x * SCALE;
+      const y = a.y * SCALE;
+      const isCp = a.cp;
+      const isStart = (i === firstCpAnchor);
+      const isSelected = (i === state.selected);
+
+      if (isSelected) {
+        ctx.beginPath();
+        ctx.arc(x, y, 15 * ui, 0, Math.PI * 2);
+        ctx.strokeStyle = 'rgba(255,217,61,.35)';
+        ctx.lineWidth = 3 * ui;
+        ctx.stroke();
+      }
+
+      ctx.beginPath();
+      ctx.arc(x, y, 10 * ui, 0, Math.PI * 2);
+      if (isStart) ctx.fillStyle = '#a78bfa';
+      else if (isCp) ctx.fillStyle = '#3a3a52';
+      else ctx.fillStyle = '#181826';
+      ctx.fill();
+      ctx.strokeStyle = isSelected ? '#ffd93d'
+                      : (isStart ? '#e0d5ff' : (isCp ? '#fff' : '#5a5a75'));
+      ctx.lineWidth = (isSelected ? 2.5 : 2) * ui;
+      ctx.stroke();
+
+      ctx.fillStyle = isSelected ? '#ffd93d' : '#c8c8d8';
+      ctx.font = `bold ${12 * ui}px monospace`;
+      ctx.fillText(String(i), x + 14 * ui, y + 4 * ui);
+    }
+  }
+
+  function draw() {
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, SIZE, SIZE);
+
+    ctx.save();
+    ctx.translate(state.panX, state.panY);
+    ctx.scale(state.zoom, state.zoom);
+
+    drawReference();
+    drawGrid();
+
+    if (state.anchors.length > 0) {
+      drawFigure();
+    }
+
+    ctx.restore();
+
+    if (state.anchors.length === 0) {
+      ctx.fillStyle = '#3a3a52';
+      ctx.font = '14px -apple-system, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('Кликните, чтобы добавить первую точку', SIZE / 2, SIZE / 2);
+      ctx.textAlign = 'start';
+    }
+  }
+
+  /* ============ Хит-тест ============ */
+
+  function hitAnchor(dx, dy) {
+    const r = 12 / (SCALE * state.zoom);
+    for (let i = state.anchors.length - 1; i >= 0; i--) {
+      const a = state.anchors[i];
+      if (dist(a.x, a.y, dx, dy) <= r) return i;
+    }
+    return -1;
+  }
+
+  function hitControl(dx, dy) {
+    const r = 10 / (SCALE * state.zoom);
+    for (let i = 0; i < state.segs.length; i++) {
+      const seg = state.segs[i];
+      if (!seg || seg.type !== 'curve') continue;
+      if (dist(seg.c1x, seg.c1y, dx, dy) <= r) return { segIdx: i, which: 'c1' };
+      if (dist(seg.c2x, seg.c2y, dx, dy) <= r) return { segIdx: i, which: 'c2' };
+    }
+    return null;
+  }
+
+  function getPos(e) {
+    const rect = canvas.getBoundingClientRect();
+    const px = (e.clientX - rect.left) * (SIZE / rect.width);
+    const py = (e.clientY - rect.top) * (SIZE / rect.height);
+    const cx = (px - state.panX) / state.zoom;
+    const cy = (py - state.panY) / state.zoom;
+    return { dx: cx / SCALE, dy: cy / SCALE };
+  }
+
+  /* ============ Указатель ============ */
+
+  canvas.addEventListener('pointerdown', e => {
+    if (e.button === 2) return;
+
+    if (e.button === 1) {
+      e.preventDefault();
+      panStart = {
+        clientX: e.clientX, clientY: e.clientY,
+        panX: state.panX, panY: state.panY
+      };
+      try { canvas.setPointerCapture(e.pointerId); } catch(_) {}
+      canvas.style.cursor = 'grabbing';
+      return;
+    }
+
+    e.preventDefault();
+    const { dx, dy } = getPos(e);
+    const ctrl = hitControl(dx, dy);
+    if (ctrl) {
+      dragTarget = { kind: ctrl.which, segIdx: ctrl.segIdx };
+      canvas.setPointerCapture(e.pointerId);
+      return;
+    }
+
+    const aIdx = hitAnchor(dx, dy);
+
+    if (state.mode === 'add') {
+      if (aIdx >= 0) {
+        state.selected = aIdx;
+        dragTarget = { kind: 'anchor', idx: aIdx };
+      } else {
+        addAnchor(snap(dx), snap(dy));
+        return;
+      }
+    } else if (state.mode === 'move') {
+      if (aIdx >= 0) {
+        state.selected = aIdx;
+        dragTarget = { kind: 'anchor', idx: aIdx };
+      }
+    } else if (state.mode === 'cp') {
+      if (aIdx >= 0) {
+        state.anchors[aIdx].cp = !state.anchors[aIdx].cp;
+        rebuildUI();
+        draw();
+      }
+      return;
+    }
+
+    if (dragTarget) canvas.setPointerCapture(e.pointerId);
+    rebuildUI();
+    draw();
+  });
+
+  canvas.addEventListener('pointermove', e => {
+    if (panStart) {
+      const rect = canvas.getBoundingClientRect();
+      const sx = SIZE / rect.width;
+      const sy = SIZE / rect.height;
+      state.panX = panStart.panX + (e.clientX - panStart.clientX) * sx;
+      state.panY = panStart.panY + (e.clientY - panStart.clientY) * sy;
+      draw();
+      return;
+    }
+    if (!dragTarget) return;
+    const { dx, dy } = getPos(e);
+    const x = Math.max(0, Math.min(DESIGN, snap(dx)));
+    const y = Math.max(0, Math.min(DESIGN, snap(dy)));
+
+    if (dragTarget.kind === 'anchor') {
+      state.anchors[dragTarget.idx].x = +x.toFixed(1);
+      state.anchors[dragTarget.idx].y = +y.toFixed(1);
+    } else {
+      const seg = state.segs[dragTarget.segIdx];
+      if (seg) {
+        if (dragTarget.kind === 'c1') { seg.c1x = +x.toFixed(1); seg.c1y = +y.toFixed(1); }
+        else { seg.c2x = +x.toFixed(1); seg.c2y = +y.toFixed(1); }
+      }
+    }
+    rebuildUI();
+    draw();
+  });
+
+  canvas.addEventListener('pointerup', e => {
+    if (panStart) {
+      panStart = null;
+      canvas.style.cursor = state.mode === 'move' ? 'grab' : 'crosshair';
+      try { canvas.releasePointerCapture(e.pointerId); } catch(_) {}
+      return;
+    }
+    dragTarget = null;
+    try { canvas.releasePointerCapture(e.pointerId); } catch(_) {}
+  });
+
+  canvas.addEventListener('pointercancel', () => {
+    panStart = null;
+    dragTarget = null;
+  });
+
+  canvas.addEventListener('contextmenu', e => {
+    e.preventDefault();
+    const { dx, dy } = getPos(e);
+    const aIdx = hitAnchor(dx, dy);
+    if (aIdx >= 0) deleteAnchor(aIdx);
+  });
+
+  canvas.addEventListener('wheel', e => {
+    e.preventDefault();
+    const rect = canvas.getBoundingClientRect();
+    const mx = (e.clientX - rect.left) * (SIZE / rect.width);
+    const my = (e.clientY - rect.top) * (SIZE / rect.height);
+
+    const factor = e.deltaY < 0 ? 1.15 : 1 / 1.15;
+    const newZoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, state.zoom * factor));
+    if (newZoom === state.zoom) return;
+
+    const canvasX = (mx - state.panX) / state.zoom;
+    const canvasY = (my - state.panY) / state.zoom;
+
+    state.zoom = newZoom;
+    state.panX = mx - canvasX * newZoom;
+    state.panY = my - canvasY * newZoom;
+
+    updateZoomUI();
+    draw();
+  }, { passive: false });
+
+  /* ============ Операции с точками ============ */
+
+  function syncSegs() {
+    const need = state.closed
+      ? state.anchors.length
+      : Math.max(0, state.anchors.length - 1);
+    while (state.segs.length < need) state.segs.push({ type: 'line' });
+    while (state.segs.length > need) state.segs.pop();
+  }
+
+  function addAnchor(x, y) {
+    const wasEmpty = state.anchors.length === 0;
+    state.anchors.push({ x: +x.toFixed(1), y: +y.toFixed(1), cp: wasEmpty });
+    state.selected = state.anchors.length - 1;
+    syncSegs();
+    rebuildUI();
+    draw();
+  }
+
+  function deleteAnchor(idx) {
+    if (idx < 0 || idx >= state.anchors.length) return;
+    state.anchors.splice(idx, 1);
+    if (state.segs.length > 0) {
+      if (idx < state.segs.length) state.segs.splice(idx, 1);
+      else state.segs.pop();
+    }
+    if (state.selected === idx) state.selected = -1;
+    else if (state.selected > idx) state.selected--;
+    syncSegs();
+    rebuildUI();
+    draw();
+  }
+
+  function toggleSegType(i) {
+    const seg = state.segs[i];
+    if (!seg) return;
+    if (seg.type === 'line') {
+      seg.type = 'curve';
+      const a = state.anchors[i];
+      const b = state.anchors[(i + 1) % state.anchors.length];
+      seg.c1x = +(a.x + (b.x - a.x) / 3).toFixed(1);
+      seg.c1y = +(a.y + (b.y - a.y) / 3).toFixed(1);
+      seg.c2x = +(a.x + 2 * (b.x - a.x) / 3).toFixed(1);
+      seg.c2y = +(a.y + 2 * (b.y - a.y) / 3).toFixed(1);
+    } else {
+      seg.type = 'line';
+      delete seg.c1x; delete seg.c1y; delete seg.c2x; delete seg.c2y;
+    }
+    rebuildUI();
+    draw();
+  }
+
+  function pickSegmentIndex() {
+    const n = state.anchors.length;
+    const need = state.closed ? n : Math.max(0, n - 1);
+    if (need === 0) return -1;
+    let idx = state.selected;
+    if (idx < 0 || idx >= n) idx = n - 1;
+    if (idx >= need) idx = need - 1;
+    return idx;
+  }
+
+  /* ============ Горячие клавиши ============ */
+
+  window.addEventListener('keydown', e => {
+    if (e.repeat) return;
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+
+    /* Игнорируем только текстовые поля.
+       Чекбоксы и кнопки — не мешают. */
+    const el = document.activeElement;
+    const tag = el ? el.tagName : '';
+    const type = el ? (el.type || '') : '';
+    if (tag === 'TEXTAREA') return;
+    if (tag === 'INPUT' && (
+      type === 'text' || type === 'number' ||
+      type === 'search' || type === 'email' ||
+      type === 'password' || type === 'url'
+    )) return;
+
+    const key = e.key.toLowerCase();
+
+    /* Линия: L (лат.) или Д (кир. на той же клавише) */
+    if (key === 'l' || key === 'д') {
+      const idx = pickSegmentIndex();
+      if (idx < 0) return;
+      const seg = state.segs[idx];
+      if (seg && seg.type === 'curve') {
+        e.preventDefault();
+        toggleSegType(idx);
+      }
+      return;
+    }
+
+    /* Кривая: K (лат.) или Л (кир. на той же клавише) */
+    if (key === 'k' || key === 'л') {
+      const idx = pickSegmentIndex();
+      if (idx < 0) return;
+      const seg = state.segs[idx];
+      if (seg && seg.type === 'line') {
+        e.preventDefault();
+        toggleSegType(idx);
+      }
+      return;
+    }
+
+    if (key === 'delete' || key === 'backspace') {
+      if (state.selected >= 0) {
+        e.preventDefault();
+        deleteAnchor(state.selected);
+      }
+      return;
+    }
+
+    /* Зум */
+    if (key === '+' || key === '=') { e.preventDefault(); zoomIn(); return; }
+    if (key === '-' || key === '_') { e.preventDefault(); zoomOut(); return; }
+    if (key === '0') { e.preventDefault(); zoomReset(); return; }
+  });
+
+  /* ============ DOM ============ */
+
+  const nameInput = document.getElementById('name-input');
+  const closedInput = document.getElementById('closed-input');
+  const snapInput = document.getElementById('snap-input');
+  const anchorList = document.getElementById('anchor-list');
+  const anchorCount = document.getElementById('anchor-count');
+  const output = document.getElementById('output');
+
+  const refStatus = document.getElementById('ref-status');
+  const refOpacity = document.getElementById('ref-opacity');
+  const refOpacityVal = document.getElementById('ref-opacity-val');
+  const refScale = document.getElementById('ref-scale');
+  const refScaleVal = document.getElementById('ref-scale-val');
+  const refLoadBtn = document.getElementById('ref-load-btn');
+  const refToggleBtn = document.getElementById('ref-toggle-btn');
+  const refRemoveBtn = document.getElementById('ref-remove-btn');
+  const refResetScaleBtn = document.getElementById('ref-reset-scale-btn');
+  const refFitInput = document.getElementById('ref-fit-input');
+  const imgInput = document.getElementById('img-input');
+
+  document.getElementById('zoom-in-btn').addEventListener('click', zoomIn);
+  document.getElementById('zoom-out-btn').addEventListener('click', zoomOut);
+  document.getElementById('zoom-reset-btn').addEventListener('click', zoomReset);
+
+  nameInput.addEventListener('input', () => {
+    state.name = nameInput.value || 'Без имени';
+  });
+
+  closedInput.addEventListener('change', () => {
+    state.closed = closedInput.checked;
+    syncSegs();
+    rebuildUI();
+    draw();
+    closedInput.blur();  // возвращаем фокус на холст
+  });
+
+  snapInput.addEventListener('change', () => {
+    snapEnabled = snapInput.checked;
+    snapInput.blur();
+  });
+
+  document.querySelectorAll('.modes button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.modes button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      state.mode = btn.dataset.mode;
+      canvas.style.cursor = state.mode === 'move' ? 'grab' : 'crosshair';
+    });
+  });
+
+  /* ============ Референс ============ */
+
+  refLoadBtn.addEventListener('click', () => imgInput.click());
+
+  imgInput.addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        state.refImage = img;
+        state.refVisible = true;
+        state.refName = file.name;
+        refStatus.textContent = file.name + ' · ' + img.width + '×' + img.height;
+        refStatus.classList.add('has-img');
+        refToggleBtn.disabled = false;
+        refToggleBtn.textContent = 'Скрыть';
+        refRemoveBtn.disabled = false;
+        draw();
+      };
+      img.onerror = () => alert('Не удалось прочитать картинку');
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+    imgInput.value = '';
+  });
+
+  refOpacity.addEventListener('input', () => {
+    const v = parseInt(refOpacity.value, 10);
+    state.refOpacity = v / 100;
+    refOpacityVal.textContent = v + '%';
+    draw();
+  });
+
+  refScale.addEventListener('input', () => {
+    const v = parseInt(refScale.value, 10);
+    state.refScale = v / 100;
+    refScaleVal.textContent = v + '%';
+    draw();
+  });
+
+  refResetScaleBtn.addEventListener('click', () => {
+    state.refScale = 1;
+    refScale.value = '100';
+    refScaleVal.textContent = '100%';
+    draw();
+  });
+
+  refToggleBtn.addEventListener('click', () => {
+    if (!state.refImage) return;
+    state.refVisible = !state.refVisible;
+    refToggleBtn.textContent = state.refVisible ? 'Скрыть' : 'Показать';
+    draw();
+  });
+
+  refRemoveBtn.addEventListener('click', () => {
+    state.refImage = null;
+    state.refVisible = true;
+    state.refName = '';
+    refStatus.textContent = 'Картинка не загружена';
+    refStatus.classList.remove('has-img');
+    refToggleBtn.disabled = true;
+    refToggleBtn.textContent = 'Скрыть';
+    refRemoveBtn.disabled = true;
+    draw();
+  });
+
+  refFitInput.addEventListener('change', () => {
+    state.refFit = refFitInput.checked;
+    draw();
+  });
+
+  /* ============ Список точек ============ */
+
+  function rebuildUI() {
+    anchorCount.textContent = String(state.anchors.length);
+    anchorList.innerHTML = '';
+
+    const need = state.closed
+      ? state.anchors.length
+      : Math.max(0, state.anchors.length - 1);
+
+    let firstCpAnchor = -1;
+    for (let i = 0; i < state.anchors.length; i++) {
+      if (state.anchors[i].cp) { firstCpAnchor = i; break; }
+    }
+
+    for (let i = 0; i < state.anchors.length; i++) {
+      const a = state.anchors[i];
+      const row = document.createElement('div');
+      row.className = 'anchor-row';
+      if (a.cp) row.classList.add('is-cp');
+      if (i === firstCpAnchor) row.classList.add('is-start');
+      if (i === state.selected) row.classList.add('is-selected');
+
+      row.addEventListener('click', ev => {
+        if (ev.target.tagName === 'INPUT' || ev.target.tagName === 'BUTTON') return;
+        state.selected = i;
+        rebuildUI();
+        draw();
+      });
+
+      const idx = document.createElement('span');
+      idx.className = 'idx';
+      idx.textContent = String(i);
+      row.appendChild(idx);
+
+      const xin = document.createElement('input');
+      xin.type = 'number';
+      xin.value = Math.round(a.x);
+      xin.step = 1;
+      xin.min = 0;
+      xin.max = DESIGN;
+      xin.addEventListener('change', () => {
+        a.x = Math.max(0, Math.min(DESIGN, +xin.value || 0));
+        state.selected = i;
+        draw();
+      });
+      row.appendChild(xin);
+
+      const yin = document.createElement('input');
+      yin.type = 'number';
+      yin.value = Math.round(a.y);
+      yin.step = 1;
+      yin.min = 0;
+      yin.max = DESIGN;
+      yin.addEventListener('change', () => {
+        a.y = Math.max(0, Math.min(DESIGN, +yin.value || 0));
+        state.selected = i;
+        draw();
+      });
+      row.appendChild(yin);
+
+      const cpLabel = document.createElement('label');
+      cpLabel.className = 'cp-toggle';
+      const cpIn = document.createElement('input');
+      cpIn.type = 'checkbox';
+      cpIn.checked = !!a.cp;
+      cpIn.addEventListener('change', () => {
+        a.cp = cpIn.checked;
+        state.selected = i;
+        rebuildUI();
+        draw();
+      });
+      cpLabel.appendChild(cpIn);
+      const cpText = document.createElement('span');
+      cpText.textContent = 'CP';
+      cpLabel.appendChild(cpText);
+      row.appendChild(cpLabel);
+
+      if (i < need) {
+        const seg = state.segs[i];
+        const segBtn = document.createElement('button');
+        segBtn.className = 'seg-btn' + (seg && seg.type === 'curve' ? ' curve' : '');
+        segBtn.textContent = seg && seg.type === 'curve' ? 'K' : 'L';
+        segBtn.title = (seg && seg.type === 'curve')
+          ? 'Кривая → линия (L / Д)'
+          : 'Линия → кривая (K / Л)';
+        segBtn.addEventListener('click', () => {
+          state.selected = i;
+          toggleSegType(i);
+        });
+        row.appendChild(segBtn);
+      } else {
+        row.appendChild(document.createElement('span'));
+      }
+
+      const del = document.createElement('button');
+      del.className = 'del-btn';
+      del.textContent = '×';
+      del.title = 'Удалить точку (Delete)';
+      del.addEventListener('click', () => deleteAnchor(i));
+      row.appendChild(del);
+
+      anchorList.appendChild(row);
+    }
+  }
+
+  /* ============ Экспорт ============ */
+
+  function buildJS() {
+    const { points, checkpoints } = buildSampled();
+    const ptsStr = points.map(p => `{ x: ${p.x}, y: ${p.y} }`).join(', ');
+    const cpsStr = checkpoints.join(', ');
+    return `makeFigure({
+    name: '${state.name}',
+    closed: ${state.closed},
+    points: [${ptsStr}],
+    checkpointIndices: [${cpsStr}]
+})`;
+  }
+
+  function buildFullState() {
+    return {
+      name: state.name,
+      closed: state.closed,
+      anchors: state.anchors.map(a => ({ x: a.x, y: a.y, cp: !!a.cp })),
+      segs: state.segs.map(s => {
+        if (s.type === 'curve') {
+          return { type: 'curve', c1x: s.c1x, c1y: s.c1y, c2x: s.c2x, c2y: s.c2y };
+        }
+        return { type: 'line' };
+      })
+    };
+  }
+
+  function download(filename, content) {
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  document.getElementById('save-json-btn').addEventListener('click', () => {
+    download('figure-state.json', JSON.stringify(buildFullState(), null, 2));
+  });
+
+  document.getElementById('save-js-btn').addEventListener('click', () => {
+    download('figure.js', buildJS());
+  });
+
+  document.getElementById('show-btn').addEventListener('click', () => {
+    output.textContent = buildJS();
+    output.scrollTop = 0;
+  });
+
+  document.getElementById('clear-btn').addEventListener('click', () => {
+    if (!confirm('Очистить фигуру?')) return;
+    state.anchors = [];
+    state.segs = [];
+    state.name = 'Новая фигура';
+    state.closed = false;
+    state.selected = -1;
+    nameInput.value = state.name;
+    closedInput.checked = false;
+    output.textContent = '';
+    rebuildUI();
+    draw();
+  });
+
+  const fileInput = document.getElementById('file-input');
+  document.getElementById('load-btn').addEventListener('click', () => fileInput.click());
+  fileInput.addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const data = JSON.parse(reader.result);
+        state.name = data.name || 'Фигура';
+        state.closed = !!data.closed;
+        state.anchors = (data.anchors || []).map(a => ({
+          x: +a.x, y: +a.y, cp: !!a.cp
+        }));
+        state.segs = (data.segs || []).map(s => {
+          if (s.type === 'curve') {
+            return { type: 'curve', c1x: +s.c1x, c1y: +s.c1y, c2x: +s.c2x, c2y: +s.c2y };
+          }
+          return { type: 'line' };
+        });
+        state.selected = -1;
+        syncSegs();
+        nameInput.value = state.name;
+        closedInput.checked = state.closed;
+        rebuildUI();
+        draw();
+      } catch (err) {
+        alert('Не удалось загрузить: ' + err.message);
+      }
+    };
+    reader.readAsText(file);
+    fileInput.value = '';
+  });
+
+  updateZoomUI();
+  rebuildUI();
+  draw();
+})();
+</script>
+</body>
+</html>

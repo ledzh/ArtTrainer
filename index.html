@@ -1,0 +1,1085 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- === SEO === -->
+    <meta name="description" content="Бесплатный онлайн‑тренажёр для художников: уверенные линии от руки, чувство цвета и его температура, работа с узлами вектора, сила нажатия на перо и слепой контур. Занимайтесь каждый день — прогресс сохраняется.">
+    <meta name="robots" content="index, follow">
+    <meta name="theme-color" content="#1a1a24">
+    <link rel="canonical" href="https://drawtrainer.art/">
+    <meta name="yandex-verification" content="c99fb7ca40ccc6b2" />
+
+    <!-- Open Graph (как ссылка выглядит в соцсетях и мессенджерах) -->
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Арт‑тренажёр">
+    <meta property="og:title" content="Арт‑тренажёр — упражнения для художников: линия, цвет, вектор, слепой контур">
+    <meta property="og:description" content="Бесплатный онлайн‑тренажёр для художников: уверенные линии, чувство цвета, работа с вектором и слепой контур. Практикуйтесь каждый день.">
+    <meta property="og:url" content="https://drawtrainer.art/">
+    <meta property="og:image" content="https://drawtrainer.art/og-cover.png">
+    <meta property="og:locale" content="ru_RU">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Арт‑тренажёр — упражнения для художников">
+    <meta name="twitter:description" content="Линия, цвет, вектор, сила нажатия и слепой контур — бесплатные ежедневные упражнения для художников.">
+    <meta name="twitter:image" content="https://drawtrainer.art/og-cover.png">
+
+    <!-- Структурированные данные для расширенного сниппета в поиске -->
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "Арт‑тренажёр",
+      "url": "https://ваш-домен.ru/",
+      "applicationCategory": "EducationalApplication",
+      "operatingSystem": "Web",
+      "inLanguage": "ru",
+      "description": "Онлайн‑тренажёр для художников: упражнения на линию, чувство цвета, векторные узлы, силу нажатия на перо и слепой контур.",
+      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "RUB" },
+      "featureList": [
+        "Упражнение «Линия»: ровные и уверенные линии от руки",
+        "Упражнение «Цвет»: подбор оттенка по тону, насыщенности и яркости",
+        "Упражнение «Вектор»: работа с перегибом, сглаженными и симметричными узлами",
+        "Упражнение «Сила нажатия»: управление давлением пера",
+        "Упражнение «Температура цвета»: тёплые и холодные оттенки",
+        "Упражнение «Слепой контур»: рисование по памяти"
+      ]
+    }
+    </script>
+    <title>Арт‑тренажёр — бесплатные упражнения для художников: линия, цвет, вектор, слепой контур</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="icon" href="favicon.png" type="image/x-icon">
+    <style>
+        /* --- Экран «Сила нажатия» --- */
+        #screen-pressure {
+            display: none;
+            flex-direction: column;
+            height: 100vh;
+            width: 100%;
+        }
+
+        #pressure-playfield {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            flex: 1 1 auto;
+            padding: 0 1rem 0.5rem;
+            gap: 0.5rem;
+            min-height: 0;
+        }
+
+        .pressure-hud {
+            display: flex;
+            gap: 1.5rem;
+            align-items: center;
+            justify-content: flex-end;
+            padding: 0.25rem 0.15rem;
+        }
+
+        .pressure-hud .hud-item {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            line-height: 1.1;
+        }
+
+        .pressure-hud .hud-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: rgba(255, 255, 255, 0.45);
+        }
+
+        .pressure-hud .hud-value {
+            display: inline-block;
+            font-size: 1.35rem;
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+            color: #c4b5fd;
+        }
+
+        .pressure-hud .hud-speed .hud-value {
+            color: #7dd3fc;
+            transition: color 0.35s ease;
+        }
+
+        .pressure-hud .hud-speed.pulse .hud-value {
+            animation: speedPulse 0.65s ease;
+        }
+
+        .pressure-hud .hud-best .hud-value {
+            color: #ffd93d;
+            font-size: 1.1rem;
+        }
+
+        @keyframes speedPulse {
+            0% { transform: scale(1); color: #7dd3fc; text-shadow: none; }
+            18% { transform: scale(1.55); color: #ffd93d; text-shadow: 0 0 18px rgba(255, 217, 61, 0.95), 0 0 36px rgba(255, 217, 61, 0.55); }
+            55% { transform: scale(1.18); color: #ffd93d; text-shadow: 0 0 10px rgba(255, 217, 61, 0.45); }
+            100% { transform: scale(1); color: #7dd3fc; text-shadow: none; }
+        }
+
+        .pressure-settings {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.5rem 0.85rem;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.8);
+            flex-wrap: wrap;
+        }
+
+        .pressure-settings label {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex: 1 1 180px;
+            min-width: 0;
+        }
+
+        .pressure-settings .btn-reset-game {
+            flex: 0 0 auto;
+        }
+
+        .pressure-settings #pressure-smooth-val {
+            min-width: 2ch;
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+            color: #c4b5fd;
+            font-weight: 600;
+        }
+
+        .pressure-settings input[type="range"] {
+            flex: 1 1 auto;
+            min-width: 100px;
+            accent-color: #7b6cf6;
+            cursor: pointer;
+        }
+
+        .pressure-settings #pressure-sens-val {
+            min-width: 2.5ch;
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+            color: #c4b5fd;
+            font-weight: 600;
+        }
+
+        .pressure-settings .btn-reset-game {
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            background: transparent;
+            color: rgba(255, 255, 255, 0.75);
+            padding: 0.35rem 0.85rem;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            font-family: inherit;
+            transition: background 0.15s ease;
+        }
+
+        .pressure-settings .btn-reset-game:hover {
+            background: rgba(255, 255, 255, 0.06);
+            color: #fff;
+        }
+
+        #pressure-canvas-wrap {
+            position: relative;
+            flex: 1 1 auto;
+            min-height: 260px;
+            border-radius: 14px;
+            overflow: hidden;
+            background: #1a1a24;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35), inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+        }
+
+        #pressureCanvas {
+            display: block;
+            touch-action: none;
+            cursor: crosshair;
+        }
+
+        .speed-up-flash {
+            position: absolute;
+            left: 50%;
+            top: 42%;
+            transform: translate(-50%, -50%);
+            font-size: 2.2rem;
+            font-weight: 800;
+            letter-spacing: 0.02em;
+            color: #ffd93d;
+            text-shadow: 0 0 22px rgba(255, 217, 61, 0.9), 0 0 44px rgba(255, 217, 61, 0.4);
+            pointer-events: none;
+            opacity: 0;
+            z-index: 5;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        .speed-up-flash.show {
+            animation: speedFlash 0.9s ease-out forwards;
+        }
+
+        @keyframes speedFlash {
+            0% { opacity: 0; transform: translate(-50%, 0) scale(0.4); }
+            18% { opacity: 1; transform: translate(-50%, -6px) scale(1.35); }
+            55% { opacity: 1; transform: translate(-50%, -22px) scale(1.1); }
+            100% { opacity: 0; transform: translate(-50%, -66px) scale(1); }
+        }
+
+        .pressure-hint {
+            text-align: center;
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.55);
+            padding: 0.15rem 0.5rem 0.4rem;
+            user-select: none;
+            min-height: 1.4em;
+        }
+
+        #pressure-modal-start,
+        #pressure-modal-fail {
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            z-index: 20;
+            padding: 1rem;
+            text-align: center;
+            touch-action: none;
+            -webkit-touch-callout: none;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+                .card-icon.icon-temperature {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .card-icon.icon-temperature svg {
+            width: 70%;  /* Уменьшаем до 80%, чтобы сравняться с пером */
+            height: 100%;
+            display: block;
+        }
+
+        #screen-temperature {
+            display: none;
+            flex-direction: column;
+            height: 100vh;
+            height: 100dvh;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        #screen-temperature.hidden {
+            display: none;
+        }
+
+        .temperature-content {
+            position: relative;
+            flex: 1 1 auto;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+            padding: 0.5rem 1rem 1rem;
+            overflow-y: auto;
+        }
+
+        #temperature-game-screen {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            flex: 1 1 auto;
+        }
+
+        .temperature-hud {
+            display: flex;
+            justify-content: space-between;
+            gap: 1rem;
+            padding: 0.5rem 0.85rem;
+            background: rgba(255, 255, 255, 0.04);
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .temperature-hud-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .temperature-hud-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: rgba(255, 255, 255, 0.45);
+        }
+
+        .temperature-hud-value {
+            font-size: 1.05rem;
+            font-weight: 600;
+            font-variant-numeric: tabular-nums;
+            color: #c4b5fd;
+        }
+
+        .temperature-play-area {
+            flex: 1 1 auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 220px;
+            padding: 0.75rem 0;
+        }
+
+        #temperature-color-swatch {
+            width: min(65vw, 260px);
+            height: min(65vw, 260px);
+            border-radius: 16px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4), inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+            transition: background 0.3s ease;
+        }
+
+        #temperature-pair-area {
+            display: flex;
+            gap: 1rem;
+            width: 100%;
+            max-width: 500px;
+            justify-content: center;
+        }
+
+        .temperature-pair-swatch {
+            flex: 1 1 0;
+            aspect-ratio: 1 / 1;
+            max-width: 200px;
+            border-radius: 16px;
+            border: 3px solid transparent;
+            cursor: pointer;
+            font-family: inherit;
+            transition: border-color 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35), inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+            padding: 0;
+        }
+
+        .temperature-pair-swatch:hover:not(:disabled) {
+            border-color: rgba(196, 181, 253, 0.55);
+            transform: scale(1.02);
+        }
+
+        .temperature-pair-swatch:disabled {
+            cursor: default;
+            pointer-events: none;
+        }
+
+        .temperature-pair-swatch.correct {
+            border-color: #6bcf7f;
+            box-shadow: 0 0 0 3px rgba(107, 207, 127, 0.4), 0 8px 24px rgba(0, 0, 0, 0.35);
+        }
+        .temperature-pair-swatch.incorrect {
+            border-color: #f05e5e;
+            box-shadow: 0 0 0 3px rgba(240, 94, 94, 0.4), 0 8px 24px rgba(0, 0, 0, 0.35);
+        }
+
+        .temperature-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            padding: 0.75rem 0.85rem;
+            background: rgba(255, 255, 255, 0.04);
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .temperature-slider-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.55);
+        }
+
+        #temperature-slider {
+            width: 100%;
+            height: 26px;
+            accent-color: #7b6cf6;
+            cursor: pointer;
+        }
+        #temperature-slider:disabled {
+            cursor: default;
+            opacity: 0.6;
+        }
+
+        .temperature-slider-value {
+            display: flex;
+            justify-content: center;
+        }
+
+        .temperature-slider-value span {
+            font-size: 1.3rem;
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+            color: #c4b5fd;
+            min-width: 3ch;
+            text-align: center;
+        }
+
+        #temperature-check-btn {
+            align-self: center;
+        }
+
+        #temperature-check-btn:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+        }
+
+        .temperature-pair-instruction {
+            text-align: center;
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.65);
+            padding: 0.25rem 0;
+        }
+
+        .temperature-feedback {
+            min-height: 3em;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0.25rem;
+            padding: 0.5rem 0.75rem;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            text-align: center;
+            transition: background 0.2s ease;
+        }
+        .temperature-feedback.ok {
+            background: rgba(107, 207, 127, 0.12);
+            color: #8ee89f;
+        }
+        .temperature-feedback.warn {
+            background: rgba(255, 200, 60, 0.12);
+            color: #ffd93d;
+        }
+        .temperature-feedback.err {
+            background: rgba(240, 94, 94, 0.12);
+            color: #f08080;
+        }
+
+        .temperature-feedback .temperature-feedback-main {
+            font-weight: 600;
+            font-size: 1rem;
+        }
+        .temperature-feedback .temperature-feedback-detail {
+            font-size: 0.85rem;
+            opacity: 0.85;
+        }
+
+        .temperature-modal {
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 20;
+            padding: 1rem;
+            text-align: center;
+            touch-action: none;
+        }
+
+        .temperature-tip {
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.45);
+            text-align: center;
+            padding: 0 0.5rem;
+            margin-top: -0.25rem;
+            line-height: 1.35;
+        }
+
+        @media (max-width: 420px) {
+            .temperature-tip {
+                font-size: 0.75rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Yandex.Metrika counter -->
+<script type="text/javascript">
+    (function(m,e,t,r,i,k,a){
+        m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+        m[i].l=1*new Date();
+        for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
+        k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)
+    })(window, document,'script','https://mc.yandex.ru/metrika/tag.js?id=114310642', 'ym');
+
+    ym(114310642, 'init', {ssr:true, webvisor:true, clickmap:true, ecommerce:"dataLayer", referrer: document.referrer, url: location.href, accurateTrackBounce:true, trackLinks:true});
+</script>
+<noscript><div><img src="https://mc.yandex.ru/watch/114310642" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
+<!-- /Yandex.Metrika counter -->
+
+    <!-- Текстовый блок для поисковых систем и пользователей без JavaScript -->
+    <noscript>
+        <div style="max-width:640px;margin:2rem auto;padding:1rem 1.5rem;background:rgba(255,255,255,0.05);border-radius:12px;color:#c4b5fd;font-size:0.95rem;">
+            <h2>Арт‑тренажёр — упражнения для художников</h2>
+            <p>Бесплатный веб‑тренажёр для ежедневной практики рисования. В него входят шесть упражнений:</p>
+            <ul>
+                <li><strong>Линия</strong> — учит проводить ровные и уверенные линии от руки;</li>
+                <li><strong>Цвет</strong> — тренирует восприятие оттенков по тону, насыщенности и яркости;</li>
+                <li><strong>Вектор</strong> — работа с узлами и направляющими кривых;</li>
+                <li><strong>Сила нажатия</strong> — управление давлением на перо;</li>
+                <li><strong>Температура цвета</strong> — различение тёплых и холодных оттенков;</li>
+                <li><strong>Слепой контур</strong> — запоминание фигуры и рисование по памяти.</li>
+            </ul>
+            <p>Для работы приложения включите JavaScript.</p>
+        </div>
+    </noscript>
+
+    <div id="screen-menu">
+        <header class="header">
+            <img class="logo" src="mascot.png" alt="Логотип Арт‑тренажёра — маскот приложения">
+            <h1>Арт‑тренажёр</h1>
+            <p>Выберите упражнение, чтобы начать практику</p>
+        </header>
+        <nav class="menu">
+            <a href="#" onclick="App.startExercise('line'); return false;">
+                <div class="card-icon icon-line"></div>
+                <div class="card-title">Линия</div>
+                <div class="card-desc">Учитесь проводить ровные и уверенные линии от руки</div>
+            </a>
+            <a href="#" onclick="App.startExercise('color'); return false;">
+                <div class="card-icon icon-color"></div>
+                <div class="card-title">Цвет</div>
+                <div class="card-desc">Тренируйте восприятие и определение оттенков</div>
+            </a>
+            <a href="#" onclick="App.startExercise('vector'); return false;">
+                <div class="card-icon icon-vector"></div>
+                <div class="card-title">Вектор</div>
+                <div class="card-desc">Создавайте фигуры с разными типами узлов</div>
+            </a>
+            <a href="#" onclick="App.startExercise('pressure'); return false;">
+                <div class="card-icon icon-pressure">
+                    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                        <g transform="rotate(45 12 12)">
+                            <rect x="9" y="2" width="6" height="15" rx="1" fill="url(#pencilGrad)" stroke="#7b6cf6" stroke-width="1.1"/>
+                            <path d="M9 17 L 15 17 L 12 22 Z" fill="#7b6cf6"/>
+                            <path d="M10.5 20 L 12 22 L 13.5 20 Z" fill="#fff" opacity="0.85"/>
+                            <rect x="9" y="2" width="6" height="2" fill="#7b6cf6" opacity="0.35"/>
+                        </g>
+                        <defs>
+                            <linearGradient id="pencilGrad" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stop-color="#c4b5fd"/>
+                                <stop offset="100%" stop-color="#7b6cf6"/>
+                            </linearGradient>
+                        </defs>
+                        <path d="M 4.9 20.7 A 1.6 1.6 0 0 1 3.3 19.1" stroke="#7b6cf6" stroke-width="0.9" fill="none" stroke-linecap="round" opacity="0.95"/>
+                        <path d="M 4.9 21.9 A 2.8 2.8 0 0 1 2.1 19.1" stroke="#7b6cf6" stroke-width="0.7" fill="none" stroke-linecap="round" opacity="0.55"/>
+                    </svg>
+                </div>
+                <div class="card-title">Сила нажатия</div>
+                <div class="card-desc">Управляйте силой нажатия на перо</div>
+            </a>
+                                                            <a href="#" onclick="App.startExercise('temperature'); return false;">
+                <div class="card-icon icon-temperature">
+                    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                        <defs>
+                            <linearGradient id="tempGrad" x1="0" y1="23" x2="0" y2="1" gradientUnits="userSpaceOnUse">
+                                <stop offset="0%" stop-color="#4ea3e8"/>
+                                <stop offset="50%" stop-color="#ffd93d"/>
+                                <stop offset="100%" stop-color="#fc8c70"/>
+                            </linearGradient>
+                        </defs>
+                        
+                        <!-- Шкала с делениями -->
+                        <line x1="15" y1="6" x2="20" y2="6" stroke="url(#tempGrad)" stroke-width="1.8" stroke-linecap="round"/>
+                        <line x1="15" y1="10" x2="18" y2="10" stroke="url(#tempGrad)" stroke-width="1.8" stroke-linecap="round"/>
+                        <line x1="15" y1="14" x2="20" y2="14" stroke="url(#tempGrad)" stroke-width="1.8" stroke-linecap="round"/>
+                        <line x1="15" y1="18" x2="18" y2="18" stroke="url(#tempGrad)" stroke-width="1.8" stroke-linecap="round"/>
+
+                        <!-- Жидкость внутри (градиент) -->
+                        <path d="M 8 7 L 12 7 L 12 18 A 4 4 0 1 1 8 18 Z" fill="url(#tempGrad)"/>
+                        
+                        <!-- Контур термометра (светло-фиолетовый) -->
+                        <path d="M 7 4 A 3 3 0 0 1 13 4 L 13 18 A 5 5 0 1 1 7 18 Z" fill="none" stroke="#c4b5fd" stroke-width="1.5" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+                <div class="card-title" style="text-align:center">Температура цвета</div>
+                <div class="card-desc">Различайте тёплые и холодные оттенки</div>
+            </a>
+
+                        <a href="#" onclick="App.startExercise('blind'); return false;">
+                <div class="card-icon icon-blind">
+                    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                        <path d="M12 5C6 5 2 12 2 12C2 12 6 19 12 19C18 19 22 12 22 12C22 12 18 5 12 5Z" fill="none" stroke="#c4b5fd" stroke-width="2" stroke-linejoin="round"/>
+                        <circle cx="12" cy="12" r="3" fill="#c4b5fd"/>
+                        <path d="M4 4 L20 20" stroke="#fc8c70" stroke-width="2.5" stroke-linecap="round"/>
+                    </svg>
+                </div>
+                <div class="card-title">Слепой контур</div>
+                <div class="card-desc">Запоминайте фигуру и рисуйте её по памяти, не видя холста</div>
+            </a>
+        </nav>
+    </div>
+
+    <!-- LINE EXERCISE -->
+    <div id="screen-exercise">
+        <div class="exercise-header">
+            <div class="exercise-header-left">
+                <button class="btn-back-menu" onclick="App.backToMenu()" title="В главное меню">←</button>
+                <div>
+                    <div class="exercise-title">Упражнение: Линия</div>
+                    <div class="exercise-status">Фигура <span id="fig-num">1</span> из <span id="fig-total">10</span></div>
+                </div>
+            </div>
+            <div class="level-badge" id="level-display">Уровень 1</div>
+        </div>
+
+        <div id="canvas-container">
+            <canvas id="drawingCanvas"></canvas>
+
+            <button id="btn-show-hint" class="btn-show-hint" onclick="Line.showHint()" style="display:none">
+                Показать фигуру
+            </button>
+            <button id="btn-restart" class="btn-restart" onclick="Line.restartCurrentFigure()" style="display:none">
+                Заново
+            </button>
+
+            <div id="modal-start">
+                <div class="modal-card">
+                    <div class="modal-title">Готовы к упражнению?</div>
+                    <div class="modal-desc">
+                        Ведите перо (или мышь) строго по серому контуру, не выходя за его границы.
+                        Начинайте с фиолетового круга. Если выйдете за линию или отпустите перо —
+                        прогресс сбросится к последнему чекпоинту, и чтобы продолжить,
+                        нужно снова вернуться к нему. Уже пройденные отрезки сохраняются.
+                    </div>
+                    <div class="modal-actions">
+                        <button class="btn-resume" id="btn-resume" style="display:none" onclick="Line.resumeProgress()">Продолжить</button>
+                        <button class="btn-start" id="btn-fresh" onclick="Line.startFresh()">Начать заново</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="modal-win">
+                <div class="win-icon">🎉</div>
+                <div class="win-title">Уровень пройден!</div>
+                <div class="win-desc">Вы обвели все <span id="win-fig-total">10</span> фигур.</div>
+                <div class="modal-actions">
+                    <button class="btn-start" id="btn-next-level" onclick="Line.nextLevel()">Следующий уровень</button>
+                    <button class="btn-back" onclick="Line.resetLevel()">Заново</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="dev-panel" class="hidden">
+            <div class="dev-title">Режим разработчика (D+V — закрыть)</div>
+            <div id="dev-content"></div>
+        </div>
+    </div>
+
+    <!-- COLOR EXERCISE -->
+    <div id="screen-color">
+        <div class="exercise-header">
+            <div class="exercise-header-left">
+                <button class="btn-back-menu" onclick="App.backToMenu()" title="В главное меню">←</button>
+                <div>
+                    <div class="exercise-title">Упражнение: Цвет</div>
+                    <div class="exercise-status">
+                        Стадия <span id="color-round-num">1</span> из 5 ·
+                        Допуск ±<span id="color-tol-num">25</span>%
+                    </div>
+                </div>
+            </div>
+            <div class="level-badge" id="color-level-display">Уровень 1</div>
+        </div>
+
+        <div id="color-playfield">
+            <div class="color-compare">
+                <div class="color-swatch-wrap">
+                    <div class="swatch-label">Цель</div>
+                    <div class="color-swatch" id="color-target"></div>
+                </div>
+                <div class="color-swatch-wrap">
+                    <div class="swatch-label">Ваш цвет</div>
+                    <div class="color-swatch" id="color-guess"></div>
+                </div>
+            </div>
+
+            <div class="color-sliders">
+                <div class="slider-row" id="slider-row-h">
+                    <div class="slider-header">
+                        <span>Тон</span>
+                        <span class="slider-value"><span id="val-h">0</span>°</span>
+                    </div>
+                    <input type="range" id="slider-h" min="0" max="360" step="1" value="0">
+                </div>
+                <div class="slider-row locked" id="slider-row-s">
+                    <div class="slider-header">
+                        <span>Насыщенность <span class="lock-icon" id="lock-s">🔒</span></span>
+                        <span class="slider-value"><span id="val-s">50</span></span>
+                    </div>
+                    <input type="range" id="slider-s" min="0" max="100" step="1" value="50" disabled>
+                </div>
+                <div class="slider-row locked" id="slider-row-b">
+                    <div class="slider-header">
+                        <span>Яркость <span class="lock-icon" id="lock-b">🔒</span></span>
+                        <span class="slider-value"><span id="val-b">50</span></span>
+                    </div>
+                    <input type="range" id="slider-b" min="0" max="100" step="1" value="50" disabled>
+                </div>
+            </div>
+
+            <div class="color-actions">
+                <button class="btn-primary" id="btn-check-color" onclick="Color.checkColorGuess()">Проверить</button>
+            </div>
+
+            <div class="color-feedback" id="color-feedback"></div>
+
+            <div id="color-modal-start" style="position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;z-index:20;padding:1rem;backdrop-filter:blur(4px);">
+                <div class="modal-card">
+                    <div class="modal-title">Готовы угадывать цвета?</div>
+                    <div class="modal-desc">
+                        Сравнивайте свой цвет с цветом-целью и двигайте ползунки, пока они не совпадут.
+                        На 2-м уровне открывается насыщенность, на 3-м — яркость.
+                        На каждой стадии допуск уменьшается: 25% → 20% → 15% → 10% → 5%.
+                        Нужно угадать 5 цветов подряд. После проверки вы увидите, на сколько
+                        процентов совпали с целью.
+                    </div>
+                    <div class="modal-actions">
+                        <button class="btn-resume" id="color-btn-resume" style="display:none" onclick="Color.resumeColorProgress()">Продолжить</button>
+                        <button class="btn-start" id="color-btn-fresh" onclick="Color.startFreshColor()">Начать заново</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="color-modal-win" style="position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);display:none;align-items:center;justify-content:center;z-index:20;padding:1rem;flex-direction:column;">
+                <div class="win-icon">🎉</div>
+                <div class="win-title" id="color-win-title">Уровень пройден!</div>
+                <div class="win-desc" id="color-win-desc">Вы угадали все 5 цветов.</div>
+                <div class="modal-actions">
+                    <button class="btn-start" id="color-btn-next-level" onclick="Color.nextColorLevel()">Следующий уровень</button>
+                    <button class="btn-back" onclick="Color.resetColorLevel()">Заново</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="color-dev-panel" class="hidden">
+            <div class="dev-title">Режим разработчика (D+V — закрыть)</div>
+            <div id="color-dev-content"></div>
+        </div>
+    </div>
+
+    <!-- VECTOR EXERCISE -->
+    <div id="screen-vector">
+        <div class="exercise-header">
+            <div class="exercise-header-left">
+                <button class="btn-back-menu" onclick="App.backToMenu()" title="В главное меню">←</button>
+                <div>
+                    <div class="exercise-title">Упражнение: Вектор</div>
+                    <div class="exercise-status">Фигура <span id="vector-fig-num">1</span> из <span id="vector-fig-total">10</span></div>
+                </div>
+            </div>
+            <div class="level-badge" id="vector-level-display">Уровень 1</div>
+        </div>
+
+        <div id="vector-playfield">
+            <div class="vector-stats">
+                <span>Совпадение</span>
+                <div class="vector-match-bar">
+                    <div class="vector-match-fill" id="vector-match-fill"></div>
+                </div>
+                <span id="vector-match-percent">0%</span>
+            </div>
+
+            <div id="vector-canvas-container">
+                <canvas id="vectorCanvas"></canvas>
+
+                <div id="vector-modal-start" style="position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;z-index:20;padding:1rem;backdrop-filter:blur(4px);">
+                    <div class="modal-card">
+                        <div class="modal-title">Готовы к векторным фигурам?</div>
+                        <div class="modal-desc">
+                            Серая линия — эталон. Цветные точки — узлы, которые нельзя двигать.
+                            Тяните <b>направляющие</b> (цветные кружки на конце линий), чтобы
+                            изогнуть свою фигуру и совместить её с эталоном.
+                            <br><br>
+                            Цвет узла определяет поведение направляющих:
+                            <br>
+                            <span style="color:#7b6cf6">● Перегиб</span> — независимые.
+                            <br>
+                            <span style="color:#FC8C70">● Сглаженный</span> — коллинеарны, длины разные.
+                            <br>
+                            <span style="color:#439FE1">● Симметричный</span> — коллинеарны и равны.
+                        </div>
+                        <div class="modal-actions">
+                            <button class="btn-resume" id="vector-btn-resume" style="display:none" onclick="Vector.resumeVectorProgress()">Продолжить</button>
+                            <button class="btn-start" onclick="Vector.startFreshVector()">Начать заново</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="vector-modal-win" style="position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);display:none;align-items:center;justify-content:center;z-index:20;padding:1rem;flex-direction:column;">
+                    <div class="win-icon">🎉</div>
+                    <div class="win-title" id="vector-win-title">Уровень пройден!</div>
+                    <div class="win-desc" id="vector-win-desc">Вы совместили все фигуры уровня.</div>
+                    <div class="modal-actions">
+                        <button class="btn-start" id="vector-btn-next-level" onclick="Vector.nextVectorLevel()">Следующий уровень</button>
+                        <button class="btn-back" onclick="Vector.resetVectorLevel()">Заново</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="vector-legend">
+                <span><span class="sw" style="background:#7b6cf6"></span>Перегиб</span>
+                <span><span class="sw" style="background:#FC8C70"></span>Сглаженный</span>
+                <span><span class="sw" style="background:#439FE1"></span>Симметричный</span>
+            </div>
+
+            <div class="vector-hint">Тяните направляющие</div>
+        </div>
+
+        <div id="vector-dev-panel" class="hidden">
+            <div class="dev-title">Режим разработчика (D+V — закрыть)</div>
+            <div id="vector-dev-content"></div>
+        </div>
+    </div>
+
+    <!-- TEMPERATURE EXERCISE -->
+    <div id="screen-temperature">
+        <div class="exercise-header">
+            <div class="exercise-header-left">
+                <button class="btn-back-menu" onclick="App.backToMenu()" title="В главное меню">←</button>
+                <div>
+                    <div class="exercise-title">Упражнение: Температура цвета</div>
+                    <div class="exercise-status" id="temperature-subtitle">Уровень 1 из 3</div>
+                </div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <button class="btn-back-menu" id="temperature-btn-restart" title="Начать заново с 1 уровня" style="width: auto; padding: 0 0.75rem; font-size: 0.8rem; font-family: inherit; color: white;">
+                    Заново
+                </button>
+                <div class="level-badge" id="temperature-level-display">1 / 3</div>
+            </div>
+        </div>
+
+        <div class="temperature-content">
+            <div id="temperature-game-screen">
+                <div class="temperature-hud">
+                    <div class="temperature-hud-item">
+                        <span class="temperature-hud-label">Раунд</span>
+                        <span class="temperature-hud-value"><span id="temperature-round-current">1</span> / <span id="temperature-round-total">10</span></span>
+                    </div>
+                    <div class="temperature-hud-item">
+                        <span class="temperature-hud-label">Точность</span>
+                        <span class="temperature-hud-value" id="temperature-accuracy">—</span>
+                    </div>
+                </div>
+
+                <div class="temperature-tip" id="temperature-tip">
+                    💡 Насыщенные цвета выражают температуру ярче. Пастельные и приглушённые оттенки — ближе к нейтральным.
+                </div>
+
+                <div class="temperature-play-area">
+                    <div id="temperature-color-swatch"></div>
+                    <div id="temperature-pair-area" style="display:none">
+                        <button class="temperature-pair-swatch" data-index="0" aria-label="Левый цвет"></button>
+                        <button class="temperature-pair-swatch" data-index="1" aria-label="Правый цвет"></button>
+                    </div>
+                </div>
+
+                <div id="temperature-slider-controls" class="temperature-controls">
+                    <div class="temperature-slider-labels">
+                        <span>❄ очень холодный</span>
+                        <span>очень тёплый 🔥</span>
+                    </div>
+                    <input type="range" id="temperature-slider" min="-100" max="100" value="0" step="1">
+                    <div class="temperature-slider-value"><span id="temperature-value">0</span></div>
+                    <button class="btn-start" id="temperature-check-btn">Проверить</button>
+                </div>
+
+                <div id="temperature-pair-controls" class="temperature-controls" style="display:none">
+                    <p class="temperature-pair-instruction">Нажмите на цвет, который кажется вам теплее</p>
+                </div>
+
+                <div id="temperature-feedback" class="temperature-feedback"></div>
+            </div>
+
+            <div id="temperature-result-modal" class="temperature-modal" style="display:none">
+                <div class="modal-card">
+                    <div class="modal-title" id="temperature-result-title">Уровень пройден!</div>
+                    <div class="modal-desc" id="temperature-result-message">Точность: 0%</div>
+                    <div class="modal-actions">
+                        <button class="btn-back" id="temperature-btn-menu">В главное меню</button>
+                        <button class="btn-back" id="temperature-btn-retry">Повторить</button>
+                        <button class="btn-start" id="temperature-btn-next" style="display:none">Следующий уровень</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PRESSURE EXERCISE -->
+    <div id="screen-pressure">
+        <div class="exercise-header">
+            <div class="exercise-header-left">
+                <button class="btn-back-menu" onclick="App.backToMenu()" title="В главное меню">←</button>
+                <div>
+                    <div class="exercise-title">Упражнение: Сила нажатия</div>
+                    <div class="exercise-status">Бесконечный режим · каждые 50 м скорость +20%</div>
+                </div>
+            </div>
+            <div class="level-badge" id="pressure-level-display">Полёт</div>
+        </div>
+
+        <div id="pressure-playfield">
+            <div class="pressure-hud">
+                <div class="hud-item">
+                    <span class="hud-label">Метры</span>
+                    <span class="hud-value" id="pressure-score-val">0</span>
+                </div>
+                <div class="hud-item hud-speed" id="pressure-speed-item">
+                    <span class="hud-label">Скорость</span>
+                    <span class="hud-value"><span id="pressure-speed-val">1.0</span>×</span>
+                </div>
+                <div class="hud-item hud-best">
+                    <span class="hud-label">Рекорд</span>
+                    <span class="hud-value" id="pressure-best-val">0</span>
+                </div>
+            </div>
+
+            <div class="pressure-settings">
+                <label>
+                    Чувствительность: <span id="pressure-sens-val">2.0</span>×
+                    <input type="range" id="pressure-sens" min="0.5" max="4.0" step="0.1" value="2.0">
+                </label>
+                <label>
+                    Плавность: <span id="pressure-smooth-val">5</span>
+                    <input type="range" id="pressure-smooth" min="1" max="10" step="1" value="5">
+                </label>
+                <label>
+                    Кривая: <span id="pressure-curve-val">1.0</span>
+                    <input type="range" id="pressure-curve" min="0.5" max="2.5" step="0.1" value="1.0">
+                </label>
+                <button class="btn-reset-game" onclick="Pressure.resetToIdle()" title="Сбросить игру">Сброс</button>
+            </div>
+
+            <div id="pressure-canvas-wrap">
+                <canvas id="pressureCanvas"></canvas>
+
+                <div class="speed-up-flash" id="pressure-speed-flash"></div>
+
+                <div id="pressure-modal-start" style="display:flex">
+                    <div class="modal-card">
+                        <div class="modal-title">Готовы к полёту?</div>
+                        <div class="modal-desc">
+                            Держите перо на экране, чтобы шар двигался вверх. Нажмите сильнее — шар поднимется, слабее — опустится. Избегайте препятствий, которые появляются справа и летят навстречу. С каждым 50 метрами скорость шара увеличивается на 20%.
+                        </div>
+                        <div class="modal-actions">
+                            <button class="btn-start" onclick="Pressure.beginFromModal()">Начать</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="pressure-modal-fail" style="display:none">
+                    <div class="win-icon">💥</div>
+                    <div class="win-title">Столкновение!</div>
+                    <div class="win-desc">Вы пролетели <b><span id="pressure-final-score">0</span> м</b>. Попробуйте ещё раз.</div>
+                    <div class="modal-actions">
+                        <button class="btn-start" onclick="Pressure.restart()">Ещё раз</button>
+                        <button class="btn-back" onclick="App.backToMenu()">В меню</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pressure-hint" id="pressure-hint">Коснитесь поля, чтобы начать</div>
+        </div>
+    </div>
+
+    <input type="file" id="figure-file-input" accept=".js,application/javascript,text/javascript,text/plain" style="display:none">
+    <input type="file" id="vector-file-input" accept=".js,application/javascript,text/javascript,text/plain" style="display:none">
+
+        <!-- BLIND CONTOUR EXERCISE -->
+    <div id="screen-blind">
+        <div class="exercise-header">
+            <div class="exercise-header-left">
+                <button class="btn-back-menu" onclick="App.backToMenu()" title="В главное меню">←</button>
+                <div>
+                    <div class="exercise-title">Упражнение: Слепой контур</div>
+                    <div class="exercise-status" id="blind-header-status">10 фигур подряд</div>
+                </div>
+            </div>
+            <div class="level-badge" id="blind-level-display">1 / 10</div>
+        </div>
+
+        <div class="blind-content">
+            <div class="blind-card">
+                <div id="blind-screen-start" class="blind-screen active" style="text-align: center;">
+                    <h2 class="blind-h1">Слепой контур</h2>
+                    <p class="blind-lead">10 фигур подряд. Каждую показывают 5 секунд — запомните и нарисуйте по памяти, не видя холста. Очки суммируются.</p>
+                    <button class="btn-start blind-btn" id="blind-start-btn">Начать</button>
+                </div>
+
+                <div id="blind-screen-memorize" class="blind-screen">
+                    <div class="blind-progress" id="blind-memorize-progress"></div>
+                    <div class="blind-round-label" id="blind-memorize-round-label">Раунд 1 / 10</div>
+                    <div class="blind-timer" id="blind-memorize-timer">5.0 с</div>
+                    <div class="blind-canvas-wrap"><canvas id="blind-memorize-canvas"></canvas></div>
+                    <p class="blind-hint">Запоминайте...</p>
+                </div>
+
+                <div id="blind-screen-draw" class="blind-screen">
+                    <div class="blind-progress" id="blind-draw-progress"></div>
+                    <div class="blind-round-label" id="blind-draw-round-label">Раунд 1 / 10</div>
+                    <div class="blind-canvas-wrap" id="blind-draw-wrap">
+                        <canvas id="blind-drawing-canvas"></canvas>
+                        <div class="blind-cursor-dot" id="blind-cursor-dot"></div>
+                    </div>
+                    <div class="blind-drawing-info">
+                        <span>Слепое рисование</span>
+                        <span id="blind-drawing-timer">0:00</span>
+                    </div>
+                    <button class="btn-start blind-btn" id="blind-done-btn">Готово</button>
+                </div>
+
+                <div id="blind-screen-result" class="blind-screen">
+                    <div class="blind-progress" id="blind-result-progress"></div>
+                    <div class="blind-round-label" id="blind-result-round-label">Раунд 1 / 10</div>
+                    <div class="blind-result-score" id="blind-result-score">0</div>
+                    <div class="blind-result-label" id="blind-result-label">за раунд</div>
+                    <div class="blind-canvas-wrap"><canvas id="blind-result-canvas"></canvas></div>
+                    <div class="blind-metrics">
+                        <span>Совпадение<b id="blind-metric-iou">—</b></span>
+                        <span>Смещение<b id="blind-metric-chamfer">—</b></span>
+                    </div>
+                    <div class="blind-total-line" id="blind-result-total">Всего: 0 из 100</div>
+                    <button class="btn-start blind-btn" id="blind-next-btn">Следующий раунд</button>
+                </div>
+
+                <div id="blind-screen-final" class="blind-screen">
+                    <h2 class="blind-h1" style="text-align:center;">Результаты</h2>
+                    <div class="blind-final-total" id="blind-final-total">0</div>
+                    <div class="blind-result-label">из 1000 очков</div>
+                    <div class="blind-final-label" id="blind-final-label">—</div>
+                    <div class="blind-final-list" id="blind-final-list"></div>
+                    <button class="btn-start blind-btn" id="blind-restart-btn">Начать заново</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/core.js"></script>
+    <script src="js/line.js"></script>
+    <script src="js/color.js"></script>
+    <script src="js/vector.js"></script>
+    <script src="js/pressure.js"></script>
+    <script src="js/temperature.js"></script>
+     <script src="js/blind.js"></script>
+    <script src="js/menu.js"></script>
+</body>
+
+</html>
