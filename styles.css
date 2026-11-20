@@ -1294,3 +1294,214 @@ html {
 .blind-final-row b.good { background: rgba(107, 207, 127, 0.15); color: var(--success-green); }
 .blind-final-row b.mid  { background: rgba(255, 217, 61, 0.15); color: #ffd93d; }
 .blind-final-row b.low  { background: rgba(255, 107, 107, 0.15); color: #ff6b6b; }
+
+/* ============================================================
+   ЭКРАН: СВЕТОТЕНЬ (ТОН)
+   ============================================================ */
+#screen-tonal {
+    display: none; flex-direction: column; height: 100vh; height: 100dvh; width: 100vw; background: #1a1a1a; overflow: hidden;
+}
+#screen-tonal.hidden { display: none !important; }
+#screen-tonal .tonal-wrapper { flex: 1 1 auto; display: flex; overflow: hidden; min-height: 0; }
+
+#screen-tonal .app {
+    width: 100%; max-width: 1300px; margin: 0 auto; padding: 12px; display: flex; flex-direction: column; gap: 10px; min-height: 0; height: 100%;
+}
+#screen-tonal .header {
+    flex: 0 0 auto; display: flex; justify-content: space-between; align-items: center; padding: 10px 16px;
+    background: #252525; border-radius: 10px; border: 1px solid #3a3a3a; font-size: 14px; color: #888;
+}
+#screen-tonal .header strong { color: #e0e0e0; font-size: 16px; }
+#screen-tonal .header .score-value { color: #4a9eff; font-size: 18px; font-weight: 600; font-variant-numeric: tabular-nums; }
+#screen-tonal .content { flex: 1 1 auto; display: flex; gap: 12px; min-height: 0; min-width: 0; justify-content: center; align-items: flex-start; }
+
+/* Уменьшили высоту холста, чтобы учесть шапку приложения */
+#screen-tonal .canvas-wrap {
+    flex: 0 0 auto; width: min(calc(100vh - 240px), calc(100vw - 500px), 640px); height: min(calc(100vh - 240px), calc(100vw - 500px), 640px);
+    background: #252525; border-radius: 10px; border: 1px solid #3a3a3a; padding: 8px; display: flex; align-items: center; justify-content: center; overflow: hidden;
+}
+#screen-tonal #tonal-scene { display: block; width: 100%; height: 100%; border-radius: 6px; object-fit: contain; }
+#screen-tonal .controls {
+    flex: 1 1 auto; min-width: 300px; max-width: 400px; background: #252525; border-radius: 10px; border: 1px solid #3a3a3a;
+    padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; overflow-y: auto;
+}
+#screen-tonal .prompt { font-size: 12px; color: #888; text-align: center; flex-shrink: 0; }
+#screen-tonal .slider-row { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+#screen-tonal .swatch-preview { width: 48px; height: 48px; border-radius: 6px; border: 2px solid #3a3a3a; flex-shrink: 0; }
+#screen-tonal .slider-container { flex: 1; min-width: 0; width: 100%; }
+#screen-tonal input[type="range"] {
+    width: 100%; height: 32px; background: linear-gradient(to right, #000, #fff); border-radius: 6px;
+    -webkit-appearance: none; appearance: none; cursor: pointer; outline: none; display: block;
+}
+#screen-tonal input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none; width: 18px; height: 38px; background: transparent;
+    border: 3px solid #4a9eff; border-radius: 5px; cursor: grab; box-shadow: 0 0 0 2px #252525, 0 0 10px rgba(74, 158, 255, 0.5);
+}
+#screen-tonal .slider-labels { display: flex; justify-content: space-between; font-size: 11px; color: #888; margin-top: 2px; }
+#screen-tonal .slider-labels .current { color: #e0e0e0; font-weight: 600; }
+
+/* ВАЖНО: Стили кнопок теперь применяются ТОЛЬКО внутри .app */
+#screen-tonal .app button {
+    background: #4a9eff; color: #fff; border: none; padding: 12px 24px; border-radius: 8px; font-size: 15px; font-weight: 600;
+    cursor: pointer; width: 100%; font-family: inherit; flex-shrink: 0; transition: background 0.15s;
+}
+#screen-tonal .app button:hover:not(:disabled) { background: #6bb0ff; }
+#screen-tonal .app button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+#screen-tonal .feedback {
+    padding: 10px 12px; border-radius: 8px; background: rgba(255, 255, 255, 0.03); border: 1px solid #3a3a3a;
+    display: none; flex-shrink: 0; animation: tonalFadeIn 0.2s ease-out;
+}
+#screen-tonal .feedback.visible { display: block; }
+@keyframes tonalFadeIn { from { opacity: 0; transform: translateY(-3px); } to { opacity: 1; transform: translateY(0); } }
+#screen-tonal .fb-swatches { display: flex; gap: 8px; margin-bottom: 10px; }
+#screen-tonal .fb-swatch-item { flex: 1; display: flex; flex-direction: column; gap: 3px; align-items: center; }
+#screen-tonal .fb-swatch { width: 100%; height: 34px; border-radius: 5px; border: 1px solid #3a3a3a; }
+#screen-tonal .fb-caption { font-size: 10px; color: #888; text-transform: uppercase; }
+#screen-tonal .tone-strip-wrap { margin-bottom: 10px; }
+#screen-tonal .tone-strip { height: 12px; background: linear-gradient(to right, #000, #fff); border-radius: 3px; position: relative; border: 1px solid #3a3a3a; }
+#screen-tonal .tone-marker { position: absolute; top: -3px; width: 2px; height: 18px; background: #4a9eff; transform: translateX(-50%); border-radius: 1px; box-shadow: 0 0 0 1px #252525; }
+#screen-tonal .tone-marker.correct { background: #4ade80; }
+#screen-tonal .fb-summary { font-size: 12px; color: #888; display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+#screen-tonal .fb-summary .diff-value { font-weight: 700; font-size: 15px; }
+#screen-tonal .fb-summary .diff-value.good { color: #4ade80; }
+#screen-tonal .fb-summary .diff-value.ok { color: #fbbf24; }
+#screen-tonal .fb-summary .diff-value.bad { color: #f87171; }
+#screen-tonal .fb-summary .points { color: #4a9eff; font-weight: 700; font-size: 13px; }
+#screen-tonal .fb-comment { font-size: 12px; color: #888; }
+#screen-tonal .game-over { flex: 1; display: none; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 20px; }
+#screen-tonal .game-over.visible { display: flex; }
+#screen-tonal .game-over h2 { font-size: 24px; }
+#screen-tonal .game-over .final-score { font-size: 48px; font-weight: 700; color: #4a9eff; margin: 16px 0; }
+#screen-tonal .game-over .grade { font-size: 16px; color: #888; margin-bottom: 24px; }
+#screen-tonal .app .game-over button { width: auto; padding: 14px 40px; font-size: 16px; } /* Сброс ширины для кнопки рестарта */
+
+@media (max-width: 760px) {
+    #screen-tonal .content { flex-direction: column; overflow-y: auto; }
+    #screen-tonal .canvas-wrap { width: min(calc(100vw - 40px), 55vh); height: min(calc(100vw - 40px), 55vh); align-self: center; }
+    #screen-tonal .controls { max-width: none; min-width: 0; }
+}
+
+/* ============================================================
+   ЭКРАН: СВЕТОТЕНЬ (СВЕТ)
+   ============================================================ */
+#screen-lightdrag {
+    display: none; flex-direction: column; height: 100vh; height: 100dvh; width: 100vw; background: #1a1a1a; overflow: hidden;
+}
+#screen-lightdrag.hidden { display: none !important; }
+#screen-lightdrag .lightdrag-wrapper { flex: 1 1 auto; display: flex; overflow: hidden; min-height: 0; }
+
+#screen-lightdrag .app { width: 100%; max-width: 1100px; margin: 0 auto; padding: 12px; height: 90%; display: flex; flex-direction: column; gap: 10px; }
+#screen-lightdrag .top-bar {
+    flex: 0 0 auto; display: flex; justify-content: space-between; padding: 8px 16px; background: #252525;
+    border-radius: 10px; border: 1px solid #3a3a3a; font-size: 14px; color: #888;
+}
+#screen-lightdrag .top-bar strong { color: #e0e0e0; }
+#screen-lightdrag .score-info strong { color: #4a9eff; font-size: 18px; }
+#screen-lightdrag .play-area { flex: 1 1 auto; display: flex; gap: 12px; align-items: center; justify-content: center; min-height: 0; }
+#screen-lightdrag .side-item { flex: 0 0 auto; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+#screen-lightdrag .side-label { font-size: 10px; color: #888; text-transform: uppercase; }
+#screen-lightdrag .reference canvas { display: block; border-radius: 6px; border: 1px solid #3a3a3a; }
+#screen-lightdrag .main-canvas-container {
+    flex: 0 0 auto; width: max(100px, min(calc(100vh - 250px), calc(100vw - 380px), 500px));
+    height: max(100px, min(calc(100vh - 250px), calc(100vw - 380px), 500px));
+    display: flex; align-items: center; justify-content: center; background: #252525; border: 1px solid #3a3a3a; border-radius: 10px;
+}
+#screen-lightdrag .main-canvas-container canvas { width: 100%; height: 100%; display: block; }
+#screen-lightdrag .pad {
+    position: relative; width: min(150px, 22vh); height: min(150px, 22vh); border-radius: 50%;
+    background: radial-gradient(circle, rgba(74, 158, 255, 0.05) 0%, rgba(74, 158, 255, 0.15) 50%, rgba(74, 158, 255, 0.4) 100%);
+    box-shadow: inset 0 0 0 2px #3a3a3a; cursor: grab; touch-action: none;
+}
+#screen-lightdrag .pad:active { cursor: grabbing; }
+#screen-lightdrag .sun {
+    position: absolute; width: 20%; height: 20%; border-radius: 50%;
+    background: radial-gradient(circle, #fff8e1 0%, #ffd54f 55%, #ff9800 100%);
+    box-shadow: 0 0 16px rgba(255, 213, 79, 0.7), 0 0 40px rgba(255, 152, 0, 0.3);
+    transform: translate(-50%, -50%); pointer-events: none;
+}
+#screen-lightdrag .target-marker {
+    position: absolute; width: 16px; height: 16px; border-radius: 50%; border: 2px solid #4ade80;
+    transform: translate(-50%, -50%); pointer-events: none; display: none; box-shadow: 0 0 12px rgba(74, 222, 128, 0.6);
+}
+#screen-lightdrag .target-marker::after { content: ''; position: absolute; inset: 2px; border-radius: 50%; background: #4ade80; }
+#screen-lightdrag .bottom-bar { flex: 0 0 auto; display: flex; gap: 12px; align-items: center; justify-content: center; min-height: 52px; }
+
+.bottom-bar:has(.visible) {
+    margin: auto;
+    width: fit-content;
+}
+
+/* ВАЖНО: Стили кнопок строго внутри .app */
+#screen-lightdrag .app button.submit-btn {
+    flex: 0 0 220px; background: #4a9eff; color: #fff; border: none; padding: 12px 24px; border-radius: 8px;
+    font-size: 15px; font-weight: 600; cursor: pointer; font-family: inherit;
+}
+#screen-lightdrag .app button.submit-btn:hover:not(:disabled) { background: #6bb0ff; }
+#screen-lightdrag .feedback {
+    flex: 1 1 auto; min-width: 0; display: none; align-items: center; gap: 12px; padding: 10px 16px;
+    border-radius: 8px; background: rgba(255, 255, 255, 0.03); border: 1px solid #3a3a3a; font-size: 14px;
+}
+#screen-lightdrag .feedback.visible { display: flex; }
+#screen-lightdrag .quality.good { color: #4ade80; } #screen-lightdrag .quality.ok { color: #fbbf24; } #screen-lightdrag .quality.bad { color: #f87171; }
+#screen-lightdrag .score-add { color: #4a9eff; font-weight: 700; font-size: 16px; }
+#screen-lightdrag .detail { color: #888; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#screen-lightdrag .game-over { flex: 1; display: none; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+#screen-lightdrag .game-over.visible { display: flex; }
+#screen-lightdrag .game-over h2 { font-size: 26px; margin-bottom: 12px; }
+#screen-lightdrag .game-over .final-score { font-size: 48px; font-weight: 700; color: #4a9eff; margin: 20px 0; }
+#screen-lightdrag .game-over .grade { font-size: 18px; color: #888; margin-bottom: 28px; }
+#screen-lightdrag .app .game-over button { background: #4a9eff; color: #fff; border: none; padding: 14px 40px; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; }
+
+/* ============================================================
+   Закладки в главном меню
+   ============================================================ */
+
+.card-pin {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 50%;
+    cursor: pointer;
+    z-index: 10;
+    transition: all 0.2s ease;
+    opacity: 0.4;
+}
+
+.card-pin svg {
+    width: 18px;
+    height: 18px;
+    fill: none;
+    stroke: var(--text-main);
+    stroke-width: 1.5;
+    stroke-linejoin: round;
+    transition: all 0.2s ease;
+}
+
+/* При наведении на карточку кнопка становится ярче */
+.menu a:hover .card-pin {
+    opacity: 1;
+    background: rgba(0, 0, 0, 0.4);
+}
+
+/* Состояние активной закладки (звезда закрашена золотым) */
+.card-pin.active {
+    opacity: 1;
+    background: rgba(255, 217, 61, 0.15);
+}
+.card-pin.active svg {
+    fill: #ffd93d;
+    stroke: #ffd93d;
+}
+
+/* Легкий акцент для самой карточки с активной закладкой */
+.menu a.is-pinned {
+    border-color: rgba(255, 217, 61, 0.4);
+    box-shadow: 0 0 20px rgba(255, 217, 61, 0.05);
+}
